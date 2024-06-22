@@ -1,4 +1,4 @@
-from auth import BaseAuthentication
+from .auth import BaseAuthentication
 import logging
 from requests.exceptions import HTTPError
 
@@ -28,7 +28,7 @@ class SalesforceClient:
 
     def get_session(self) -> requests.Session:
         return self.auth_strategy.session
-    
+
     def get_instance_url(self) -> str:
         return self.auth_strategy.instance_url
 
