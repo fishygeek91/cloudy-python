@@ -6,8 +6,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Litera
 
 from requests import HTTPError
 
-from cloudy_salesforce.client.auth import UsernamePasswordAuthentication
-
 # Assuming SalesforceClient is imported correctly
 from ..client import SalesforceClient
 
@@ -44,11 +42,8 @@ def collections_request(
     method: str, url: str, client: SalesforceClient, body: dict | None
 ) -> List[Dict[str, Any]]:
     session = client.get_session()
-    print(session.headers)
-    print(body)
     instance_url = client.get_instance_url()
     request_url = f"{instance_url}{url}"
-    print(request_url)
     try:
         response = session.request(method, request_url, json=body)
         response.raise_for_status()
@@ -217,7 +212,6 @@ def batch_records(records: List[dict], batch_size: int) -> List[List[dict]]:
 
 
 def add_attributes(records: List[dict], object_type: str) -> List[dict]:
-    print(type(records))
     for record in records:
         record["attributes"] = {"type": object_type}
     return records
@@ -248,8 +242,6 @@ def build_payload(
             f"/services/data/v61.0/composite/sobjects?ids={','.join(get_id_list(records))}&allOrNone={all_or_none}",
             None,
         )
-
-    print(type(records))
 
     body = {"allOrNone": all_or_none, "records": add_attributes(records, object_type)}
 
