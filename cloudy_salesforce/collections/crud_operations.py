@@ -2,9 +2,22 @@ from enum import Enum
 from functools import partial, wraps
 import json
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Literal
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    TypedDict,
+    Literal,
+)
 
 from requests import HTTPError
+
+from .return_functions import records_and_response, response_json_only
 
 # Assuming SalesforceClient is imported correctly
 from ..client import SalesforceClient
@@ -12,6 +25,9 @@ from ..client import SalesforceClient
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+T = TypeVar("T")
 
 
 class CRUDProps(TypedDict):
@@ -38,82 +54,48 @@ class DeleteProps(CRUDProps):
     pass
 
 
-def collections_request(
-    method: str, url: str, client: SalesforceClient, body: dict | None
-) -> List[Dict[str, Any]]:
-    session = client.get_session()
-    instance_url = client.get_instance_url()
-    request_url = f"{instance_url}{url}"
-    try:
-        response = session.request(method, request_url, json=body)
-        response.raise_for_status()
-        return response.json()
-
-    except HTTPError as http_err:
-        logger.error(f"HTTP error occurred during query: {http_err}")
-        raise
-    except Exception as err:
-        logger.error(f"Other error occurred during query: {err}")
-        raise
-
-
 CRUDLiteral = Literal["insert", "upsert", "update", "delete"]
 
-
-class CRUDOperation(Enum):
-    # /services/data/v61.0/composite/sobjects/
-    INSERT = partial(collections_request, "POST")
-    UPDATE = partial(collections_request, "PATCH")
-    UPSERT = partial(collections_request, "PATCH")
-    DELETE = partial(collections_request, "DELETE")
+COLLECTION_METHODS = {
+    "insert": "POST",
+    "update": "PATCH",
+    "upsert": "PATCH",
+    "delete": "DELETE",
+}
 
 
 def collections(
     operation: CRUDLiteral,
-) -> Callable[[Callable[..., CRUDProps]], Callable[..., List[Dict[str, Any]]]]:
-    def decorator(
-        func: Callable[..., CRUDProps]
-    ) -> Callable[..., List[Dict[str, Any]]]:
-        # PyCharm is working on support for argument annotations using @wraps
-        # https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
+    return_function: Callable[
+        [List[Dict[str, Any]], List[Dict[str, Any]]], T
+    ] = response_json_only,
+) -> Callable[[Callable[..., CRUDProps]], Callable[..., T]]:
+    def decorator(func: Callable[..., CRUDProps]) -> Callable[..., T]:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> List[Dict[str, Any]]:
-            result: CRUDProps = func(*args, **kwargs)
-            crud_function = CRUDOperation[operation.upper()]
-            client = result["client"]
+        def wrapper(*args: Any, **kwargs: Any) -> T:
+            props: CRUDProps = func(*args, **kwargs)
+            client = props["client"]
+            records_to_process = props["records"]
+
+            crud_function = partial(client.request, COLLECTION_METHODS[operation])
 
             results: List[Dict[str, Any]] = []
-            failures = {"count": 0, "results": []}
-            successes = {"count": 0, "results": []}
+
             # batch records
-            for records in batch_records(result["records"], result["batch_size"]):
-                url, body = build_payload(
-                    operation, records, result["object_type"], result["all_or_none"]
-                )
-                dml_response: List[Dict[str, Any]] = crud_function.value(
-                    client=client, url=url, body=body
+            for records in batch_records(records_to_process, props["batch_size"]):
+                url, body, params = build_payload(
+                    operation, {**props, "records": records}
                 )
 
-                # zip the records with the response
-                for record, response in zip(records, dml_response):
-                    record_result = {"record": record, "response": response}
-                    if not response["success"]:
-                        failures["count"] += 1
-                        failures["results"].append(record_result)
-                    else:
-                        successes["count"] += 1
-                        successes["results"].append(record_result)
+                dml_response = crud_function(url=url, body=body, params=params)
 
-                    results.append(record_result)
+                if not isinstance(dml_response, list):
+                    raise ValueError(
+                        f"Expected a list of responses, but received: {dml_response}"
+                    )
+                results.extend(dml_response)
 
-            # log the results
-            logger.info(f"Results for {operation} operation")
-            logger.info(f"Successes: {successes['count']}")
-            # logger.info(json.dumps(successes, indent=2))
-            logger.info(f"Failures: {failures['count']}")
-            logger.info(json.dumps(failures, indent=2))
-
-            return results
+            return return_function(records_to_process, results)
 
         return wrapper
 
@@ -122,7 +104,7 @@ def collections(
 
 # PyCharm is working on support for argument annotations using @wraps
 # https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
-@collections("insert")
+@collections("insert", return_function=records_and_response)
 def insert(
     object_type: str,
     records: List[dict],
@@ -143,7 +125,7 @@ def insert(
 
 # PyCharm is working on support for argument annotations using @wraps
 # https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
-@collections("update")
+@collections("update", return_function=records_and_response)
 def update(
     object_type: str,
     records: List[dict],
@@ -164,7 +146,7 @@ def update(
 
 # PyCharm is working on support for argument annotations using @wraps
 # https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
-@collections("upsert")
+@collections("upsert", return_function=records_and_response)
 def upsert(
     object_type: str,
     records: List[dict],
@@ -187,7 +169,7 @@ def upsert(
 
 # PyCharm is working on support for argument annotations using @wraps
 # https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
-@collections("delete")
+@collections("delete", return_function=records_and_response)
 def delete(
     object_type: str,
     records: List[dict],
@@ -232,25 +214,31 @@ def get_id_list(records: List[dict]) -> List[str]:
 
 def build_payload(
     operation: CRUDLiteral,
-    records: List[dict],
-    object_type: str,
-    all_or_none: bool,
-    external_id: str | None = None,
-) -> Tuple[str, dict | None]:
+    props: CRUDProps,
+) -> Tuple[str, dict | None, dict | None]:
+    records = props["records"]
+    all_or_none = props["all_or_none"]
+
     if operation == "delete":
+        params = {"ids": ",".join(get_id_list(records)), "allOrNone": all_or_none}
         return (
             f"/services/data/v61.0/composite/sobjects?ids={','.join(get_id_list(records))}&allOrNone={all_or_none}",
             None,
+            params,
         )
 
+    object_type = props["object_type"]
     body = {"allOrNone": all_or_none, "records": add_attributes(records, object_type)}
 
     if operation == "upsert":
-        if external_id is None:
+        if "external_id_field" in props and props["external_id_field"] is not None:
+            external_id = props["external_id_field"]
+        else:
             external_id = "Id"
         return (
             f"/services/data/v61.0/composite/sobjects/{object_type}/{external_id}",
             body,
+            None,
         )
 
-    return f"/services/data/v60.0/composite/sobjects/", body
+    return f"/services/data/v60.0/composite/sobjects/", body, None

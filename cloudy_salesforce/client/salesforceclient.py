@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from typing import Type
+from typing import Any, Dict, List, Type
 import requests
 
 
@@ -32,15 +32,21 @@ class SalesforceClient:
     def get_instance_url(self) -> str:
         return self.auth_strategy.instance_url
 
-    def query(self, soql_query: str):
-        session = self.get_session()
-        instance_url = self.get_instance_url()
-
-        query_url = f"{instance_url}/services/data/v52.0/query"
+    def request(
+        self,
+        method: str,
+        url: str,
+        body: dict | None = None,
+        params: dict | None = None,
+    ) -> Dict[str, Any] | List[Dict[str, Any]]:
+        request_url = f"{self.get_instance_url()}{url}"
         try:
-            response = session.get(query_url, params={"q": soql_query})
+            response = self.get_session().request(
+                method, request_url, json=body, params=params
+            )
             response.raise_for_status()
             return response.json()
+
         except HTTPError as http_err:
             logger.error(f"HTTP error occurred during query: {http_err}")
             raise
