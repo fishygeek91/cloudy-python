@@ -1,8 +1,7 @@
 import json
 import os
-from jinja2 import Environment, FileSystemLoader, PackageLoader
-from abc import ABC, abstractmethod
-from typing import List, OrderedDict, TypedDict
+from jinja2 import Environment, PackageLoader
+from typing import List, TypedDict
 
 from cloudy_salesforce.client import SalesforceClient
 from cloudy_salesforce.client.auth import BaseAuthentication
@@ -30,9 +29,7 @@ class SObjectGenerator:
     ):
         self.sf_client = SalesforceClient(auth_strategy=authentication)
 
-        env = Environment(
-            loader=PackageLoader("cloudy_salesforce.generator", template_dir)
-        )
+        env = Environment(loader=PackageLoader("cloudy_salesforce", template_dir))
         self.template = env.get_template(template_name)
         self.output_dir = output_dir
 
