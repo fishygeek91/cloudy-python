@@ -13,6 +13,8 @@ def generate(args):
     Handle the 'generate' command.
     """
     print(find_dotenv(raise_error_if_not_found=True))
+    load_dotenv(dotenv_path=find_dotenv(raise_error_if_not_found=True))
+    print("Environment Variables:", os.environ)
     sobjects = args.sobjects
     alias_name = args.alias
     print(f"Generating code with option1={sobjects} and option2={alias_name}")
