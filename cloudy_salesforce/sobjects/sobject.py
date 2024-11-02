@@ -1,4 +1,4 @@
-from typing import List, OrderedDict
+from typing import List
 from cloudy_salesforce.client import SalesforceClient
 
 
@@ -21,15 +21,14 @@ class SObject:
         dict: The description of the specified sObject.
         """
         # Build the URL for the describe API endpoint
-        url = f"/sobjects/{sobject}/describe/"
+        url = f"/services/data/v61.0/sobjects/{sobject}/describe/"
 
         # Make the API call to get the sObject description
         response = self.sf_client.request("GET", url)
-
-        if type(response) is OrderedDict:
+        if type(response) is dict:
             return response
         else:
-            raise Exception(f"Error: ")
+            raise Exception(f"Error with describe_sobject: {response}")
 
     def get_object_fields(self, objects: List[str]) -> dict[str, List[dict]]:
         object_field_dict = {}
