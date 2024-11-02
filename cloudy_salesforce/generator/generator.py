@@ -5,7 +5,7 @@ from typing import List, TypedDict
 
 from cloudy_salesforce.client import SalesforceClient
 from cloudy_salesforce.client.auth import BaseAuthentication
-from cloudy_salesforce.sobjects import SObject
+from cloudy_salesforce.sobjects import SObjects
 
 
 class FieldDict(TypedDict):
@@ -59,7 +59,7 @@ class SObjectGenerator:
         if isinstance(object_names, str):
             object_names = [object_names]
         # 3. passed in as a list of strings
-        sobject_client = SObject(sf_client=self.sf_client)
+        sobject_client = SObjects(sf_client=self.sf_client)
 
         object_field_dict = sobject_client.get_object_fields(object_names)
         gen_objects = []
@@ -103,8 +103,6 @@ class SObjectGenerator:
                 file.write(f"from .{class_name} import {class_name}\n")
         print(f"{init_file_path} generated.")
 
-    # ------------------------------------------------#
-
     def parse_sf_fields(self, fields: List[dict]) -> List[FieldDict]:
         field_dict_list = []
         for field in fields:
@@ -121,6 +119,9 @@ class SObjectGenerator:
         return field_dict_list
 
 
+# -----------------------HELPERS-------------------------#
+
+
 def parse_type(field_name: str, field_type: str) -> str:
     if field_type == "picklist":
         # Remove all underscores, convert to uppercase, and append PICKLIST
@@ -131,22 +132,22 @@ def parse_type(field_name: str, field_type: str) -> str:
 
 
 salesforce_to_python_type_map = {
-    "reference": "str",  # References are usually strings in Salesforce
-    "string": "str",  # String type
-    "phone": "str",  # Phone numbers are represented as strings
-    "id": "str",  # Salesforce IDs are strings
-    "email": "str",  # Emails are strings
-    "percent": "float",  # Percentages are typically floats
-    "boolean": "bool",  # Boolean type
-    "double": "float",  # Double precision numbers are floats in Python
-    "url": "str",  # URLs are strings
-    "textarea": "str",  # Textarea fields are strings
-    "date": "str",  # Date type, requires import from datetime module
-    "int": "int",  # Integer type
-    "datetime": "str",  # Datetime type, requires import from datetime module
-    "address": "str",  # Addresses can be represented as strings or custom objects
-    "encryptedstring": "str",  # Encrypted strings are still strings
-    "currency": "float",  # Currency values are floats
-    "multipicklist": "str",  # Multipicklist values are strings
-    "combobox": "str",  # Combobox values are strings
+    "reference": "str",
+    "string": "str",
+    "phone": "str",
+    "id": "str",
+    "email": "str",
+    "percent": "float",
+    "boolean": "bool",
+    "double": "float",
+    "url": "str",
+    "textarea": "str",
+    "date": "str",
+    "int": "int",
+    "datetime": "str",
+    "address": "str",
+    "encryptedstring": "str",
+    "currency": "float",
+    "multipicklist": "str",
+    "combobox": "str",
 }

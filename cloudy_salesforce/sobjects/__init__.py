@@ -1,1 +1,1 @@
-from .sobject import SObject
+from .sobject import sobject, SObjects
