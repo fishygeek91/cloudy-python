@@ -102,8 +102,6 @@ def collections(
     return decorator
 
 
-# PyCharm is working on support for argument annotations using @wraps
-# https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
 @collections("insert", return_function=records_and_response)
 def insert(
     object_type: str,
@@ -111,9 +109,9 @@ def insert(
     all_or_none: bool = True,
     batch_size: int = 200,
     client: SalesforceClient | None = None,
-) -> InsertProps:
+) -> CRUDProps:
     if client is None:
-        client = SalesforceClient()
+        client = SalesforceClient.get_default_instance()
     return {
         "client": client,
         "object_type": object_type,
@@ -123,8 +121,6 @@ def insert(
     }
 
 
-# PyCharm is working on support for argument annotations using @wraps
-# https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
 @collections("update", return_function=records_and_response)
 def update(
     object_type: str,
@@ -134,7 +130,7 @@ def update(
     client: SalesforceClient | None = None,
 ) -> UpdateProps:
     if client is None:
-        client = SalesforceClient()
+        client = SalesforceClient.get_default_instance()
     return {
         "client": client,
         "object_type": object_type,
@@ -144,8 +140,6 @@ def update(
     }
 
 
-# PyCharm is working on support for argument annotations using @wraps
-# https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
 @collections("upsert", return_function=records_and_response)
 def upsert(
     object_type: str,
@@ -156,7 +150,7 @@ def upsert(
     client: SalesforceClient | None = None,
 ) -> UpsertProps:
     if client is None:
-        client = SalesforceClient()
+        client = SalesforceClient.get_default_instance()
     return {
         "client": client,
         "object_type": object_type,
@@ -167,8 +161,6 @@ def upsert(
     }
 
 
-# PyCharm is working on support for argument annotations using @wraps
-# https://youtrack.jetbrains.com/issue/PY-62760/Support-functools.wraps
 @collections("delete", return_function=records_and_response)
 def delete(
     object_type: str,
@@ -178,7 +170,7 @@ def delete(
     client: SalesforceClient | None = None,
 ) -> DeleteProps:
     if client is None:
-        client = SalesforceClient()
+        client = SalesforceClient.get_default_instance()
     return {
         "client": client,
         "object_type": object_type,

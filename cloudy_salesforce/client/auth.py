@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import requests
 
+
 class BaseAuthentication(ABC):
     def __init__(self, session: requests.Session, instance_url: str):
         self.session = session
@@ -13,8 +14,8 @@ class BaseAuthentication(ABC):
     @staticmethod
     def get_headers(access_token) -> dict[str, str]:
         return {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
         }
 
 
@@ -25,9 +26,10 @@ from requests.exceptions import HTTPError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class UsernamePasswordAuthentication(BaseAuthentication):
     def __init__(self, username, password, security_token):
-        
+
         self.username = username
         self.password = password
         self.security_token = security_token
@@ -37,10 +39,7 @@ class UsernamePasswordAuthentication(BaseAuthentication):
     def authenticate(self):
         session = requests.Session()
         auth_url = "https://login.salesforce.com/services/Soap/u/52.0"
-        headers = {
-            'Content-Type': 'text/xml',
-            'SOAPAction': 'login'
-        }
+        headers = {"Content-Type": "text/xml", "SOAPAction": "login"}
         soap_body = f"""
         <env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
             <env:Body>
@@ -54,7 +53,7 @@ class UsernamePasswordAuthentication(BaseAuthentication):
         try:
             response = session.post(auth_url, headers=headers, data=soap_body)
             response.raise_for_status()
-            response_content = response.content.decode('utf-8')
+            response_content = response.content.decode("utf-8")
             if "faultstring" in response_content:
                 raise Exception(f"SOAP Fault: {response_content}")
             access_token = self._extract_access_token(response_content)
@@ -82,7 +81,5 @@ class UsernamePasswordAuthentication(BaseAuthentication):
         start_index = response_content.find(start_tag) + len(start_tag)
         end_index = response_content.find(end_tag)
         server_url = response_content[start_index:end_index]
-        instance_url = server_url.split('/services')[0]
+        instance_url = server_url.split("/services")[0]
         return instance_url
-
-    

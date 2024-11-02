@@ -1,0 +1,11 @@
+from typing import TypedDict, Literal
+
+{% for field_type, picklist in picklist_fields %}
+{{ field_type }} = Literal["{{ picklist|join('", "') }}"]
+{%- endfor %}
+
+
+class {{ sobject }}(TypedDict, total=False):
+{%- for field_name, field_type in fields %}
+    {{ field_name }}: {{ field_type }} | None
+{%- endfor %}

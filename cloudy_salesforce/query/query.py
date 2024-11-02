@@ -80,7 +80,7 @@ def soql_query(
 @soql_query()
 def query(soql_query: str, client: SalesforceClient | None = None) -> QueryProps:
     if client is None:
-        client = SalesforceClient()
+        client = SalesforceClient.get_default_instance()
     return {
         "client": client,
         "soql_query": soql_query,
