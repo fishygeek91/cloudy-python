@@ -12,7 +12,7 @@ def generate(args):
     """
     Handle the 'generate' command.
     """
-    find_dotenv(raise_error_if_not_found=True)
+    print(find_dotenv(raise_error_if_not_found=True))
     sobjects = args.sobjects
     alias_name = args.alias
     print(f"Generating code with option1={sobjects} and option2={alias_name}")
