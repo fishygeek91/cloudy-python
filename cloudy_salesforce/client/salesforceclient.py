@@ -11,20 +11,39 @@ import requests
 
 
 class SalesforceClient:
-    _instance = None
+    _default_instance = None
 
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(SalesforceClient, cls).__new__(cls)
-            cls._instance._initialize(*args, **kwargs)
-        return cls._instance
-
-    def _initialize(self, auth_strategy: BaseAuthentication):
+    def __init__(self, auth_strategy: BaseAuthentication):
         if not isinstance(auth_strategy, BaseAuthentication):
             raise TypeError(
                 "auth_strategy must be an instance of a subclass of BaseAuthentication"
             )
         self.auth_strategy = auth_strategy
+
+        # Set the default instance directly
+        if self._default_instance is None:
+            self.__class__._default_instance = self
+
+    @classmethod
+    def set_default_instance(cls, auth_strategy: BaseAuthentication):
+        """
+        Sets the default SalesforceClient instance.
+
+        :param auth_strategy: An instance of a subclass of BaseAuthentication.
+        """
+        cls._default_instance = cls(auth_strategy)
+
+    @classmethod
+    def get_default_instance(cls):
+        """
+        Retrieves the default SalesforceClient instance.
+
+        :return: The default SalesforceClient instance.
+        :raises ValueError: If the default instance has not been set.
+        """
+        if cls._default_instance is None:
+            raise ValueError("Default instance not set")
+        return cls._default_instance
 
     def get_session(self) -> requests.Session:
         return self.auth_strategy.session
