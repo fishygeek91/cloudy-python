@@ -24,12 +24,14 @@ class SObjectGenerator:
         self,
         authentication: BaseAuthentication,
         template_dir: str = "templates",
-        template_name: str = "sobject.j2",
+        template_name: str = "sobject.jinja2",
         output_dir: str = "sobjects",
     ):
         self.sf_client = SalesforceClient(auth_strategy=authentication)
 
-        env = Environment(loader=PackageLoader("cloudy_salesforce", template_dir))
+        env = Environment(
+            loader=PackageLoader("cloudy_salesforce.generator", template_dir)
+        )
         self.template = env.get_template(template_name)
         self.output_dir = output_dir
 
