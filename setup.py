@@ -26,4 +26,7 @@ setup(
             "cloudy-salesforce=cloudy_salesforce.generator.cli:main",
         ],
     },
+    package_data={
+        "cloudy_salesforce.generator": ["templates/*.jinja2"],
+    },
 )
