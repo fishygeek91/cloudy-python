@@ -1,7 +1,7 @@
 from functools import partial, wraps
 import json
 import logging
-from typing import Any, Callable, Dict, List, Literal, TypedDict, TypeVar
+from typing import Any, Callable, Literal, TypedDict, TypeVar
 
 from cloudy_salesforce.client.salesforceclient import SalesforceClient
 from .return_functions import response_json_only
@@ -25,7 +25,7 @@ QueryEnpoints = Literal["query", "queryAll"]
 
 def soql_query(
     endpoint: QueryEnpoints = "query",
-    return_function: Callable[[Dict[str, Any]], T] = response_json_only,
+    return_function: Callable[[dict[str, Any]], T] = response_json_only,
 ) -> Callable[[Callable[..., QueryProps]], Callable[..., T]]:
     def decorator(func: Callable[..., QueryProps]) -> Callable[..., T]:
         @wraps(func)
@@ -37,7 +37,7 @@ def soql_query(
 
             crud_function = partial(client.request, "GET")
 
-            results: Dict[str, Any] = {
+            results: dict[str, Any] = {
                 "totalSize": 0,
                 "done": False,
                 "records": [],
@@ -61,7 +61,7 @@ def soql_query(
 
             query_all(url, params, results)
 
-            def handle_nested_queries(records: List[Dict[str, Any]]) -> None:
+            def handle_nested_queries(records: list[dict[str, Any]]) -> None:
                 for record in records:
                     for key, value in record.items():
                         if isinstance(value, dict) and "nextRecordsUrl" in value:
